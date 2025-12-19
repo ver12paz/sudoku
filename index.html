@@ -2,30 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sudoku with Hints</title>
+  <title>Sudoku</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
     }
+
     table {
       margin: auto;
       border-collapse: collapse;
     }
+
     td {
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       border: 1px solid black;
-      font-size: 18px;
+      font-size: 20px;
       text-align: center;
+      cursor: pointer;
     }
-    .empty {
-      background-color: #f0f0f0;
+
+    td.fixed {
+      background-color: #ddd;
+      font-weight: bold;
+      cursor: default;
     }
-    button {
-      margin: 10px;
-      padding: 10px 15px;
-      font-size: 16px;
+
+    td.selected {
+      background-color: #aee;
+    }
+
+    .numbers {
+      margin-top: 15px;
+    }
+
+    .numbers button {
+      width: 45px;
+      height: 45px;
+      font-size: 18px;
+      margin: 2px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -38,6 +55,19 @@
 
 <br><br>
 <table id="sudoku"></table>
+
+<div class="numbers">
+  <button onclick="placeNumber(1)">1</button>
+  <button onclick="placeNumber(2)">2</button>
+  <button onclick="placeNumber(3)">3</button>
+  <button onclick="placeNumber(4)">4</button>
+  <button onclick="placeNumber(5)">5</button>
+  <button onclick="placeNumber(6)">6</button>
+  <button onclick="placeNumber(7)">7</button>
+  <button onclick="placeNumber(8)">8</button>
+  <button onclick="placeNumber(9)">9</button>
+  <button onclick="placeNumber(0)">✕</button>
+</div>
 
 <script>
   const solvedGrid = [
@@ -52,11 +82,11 @@
     [3,4,5,2,8,6,1,7,9]
   ];
 
-  let currentPuzzle = [];
+  let puzzle = [];
+  let selectedCell = null;
 
-  // 1️⃣ CREATE SUDOKU FUNCTION
   function createSudoku(emptyCells = 45) {
-    currentPuzzle = solvedGrid.map(row => row.slice());
+    puzzle = solvedGrid.map(row => row.slice());
 
     let positions = [];
     for (let r = 0; r < 9; r++) {
@@ -69,21 +99,76 @@
 
     for (let i = 0; i < emptyCells; i++) {
       let [r, c] = positions[i];
-      currentPuzzle[r][c] = 0;
+      puzzle[r][c] = 0;
     }
 
     drawSudoku();
   }
 
-  // DRAW THE GRID
   function drawSudoku() {
     const table = document.getElementById("sudoku");
     table.innerHTML = "";
 
-    currentPuzzle.forEach(row => {
+    puzzle.forEach((row, r) => {
       const tr = document.createElement("tr");
-      row.forEach(cell => {
+
+      row.forEach((cell, c) => {
         const td = document.createElement("td");
-        if (cell === 0) {
-          td.textContent = "";
-          td.classList.ad
+        td.textContent = cell === 0 ? "" : cell;
+
+        if (cell !== 0 && solvedGrid[r][c] === cell) {
+          td.classList.add("fixed");
+        }
+
+        td.onclick = () => selectCell(td, r, c);
+        tr.appendChild(td);
+      });
+
+      table.appendChild(tr);
+    });
+  }
+
+  function selectCell(td, r, c) {
+    if (td.classList.contains("fixed")) return;
+
+    document.querySelectorAll("td").forEach(cell =>
+      cell.classList.remove("selected")
+    );
+
+    td.classList.add("selected");
+    selectedCell = { td, r, c };
+  }
+
+  function placeNumber(number) {
+    if (!selectedCell) return;
+
+    const { r, c, td } = selectedCell;
+    puzzle[r][c] = number;
+    td.textContent = number === 0 ? "" : number;
+  }
+
+  function giveHint() {
+    let empty = [];
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (puzzle[r][c] === 0) {
+          empty.push([r, c]);
+        }
+      }
+    }
+
+    if (empty.length === 0) {
+      alert("Puzzle complete!");
+      return;
+    }
+
+    let [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    puzzle[r][c] = solvedGrid[r][c];
+    drawSudoku();
+  }
+
+  createSudoku();
+</script>
+
+</body>
+</html>
