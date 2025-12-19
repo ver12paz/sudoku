@@ -1,24 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Sudoku</title>
-  <style>
-    body { font-family: Arial; text-align: center; }
-    table { margin: auto; border-collapse: collapse; }
-    td { width: 45px; height: 45px; border: 1px solid black; font-size: 20px; text-align: center; cursor: pointer; }
-    td.fixed { background-color: #ddd; font-weight: bold; cursor: default; }
-    td.selected { background-color: #aee; }
-    td.wrong { background-color: #fbb; }
-    .numbers button { width: 45px; height: 45px; font-size: 18px; margin: 2px; }
-  </style>
+<meta charset="UTF-8">
+<title>Sudoku</title>
+<style>
+body { font-family: Arial; text-align: center; }
+table { margin: auto; border-collapse: collapse; }
+td { width: 45px; height: 45px; border: 1px solid black; font-size: 20px; text-align: center; cursor: pointer; }
+td.fixed { background-color: #ddd; font-weight: bold; cursor: default; }
+td.selected { background-color: #aee; }
+td.wrong { background-color: #fbb; }
+.numbers button, #difficulty button { width: 45px; height: 45px; font-size: 18px; margin: 2px; }
+#difficulty { margin-top: 10px; margin-bottom: 15px; }
+</style>
 </head>
 <body>
+
 <h1>Sudoku</h1>
+
+<div id="difficulty">
+  Choose difficulty:
+  <button onclick="setDifficulty('easy')">Easy</button>
+  <button onclick="setDifficulty('medium')">Medium</button>
+  <button onclick="setDifficulty('hard')">Hard</button>
+</div>
+
 <button id="newBtn">New Puzzle</button>
 <button id="hintBtn">Hint</button>
+
 <br><br>
 <table id="sudoku"></table>
+
 <div class="numbers">
   <button onclick="placeNumber(1)">1</button>
   <button onclick="placeNumber(2)">2</button>
@@ -34,11 +46,18 @@
 
 <script>
 window.onload = function() {
-  let solution = [];
-  let puzzle = [];
-  let selectedCell = null;
+  let solution=[], puzzle=[], selectedCell=null, emptyCells=35;
 
-  function newGame(emptyCells = 45) {
+  // ---------- DIFFICULTY ----------
+  window.setDifficulty = function(level){
+    if(level==='easy') emptyCells=30;     // fewer empty cells → easier
+    else if(level==='medium') emptyCells=40;
+    else emptyCells=50;                  // hard
+    newGame();
+  }
+
+  // ---------- SUDOKU GENERATION ----------
+  function newGame() {
     solution = generateSolvedGrid();
     puzzle = solution.map(r => r.slice());
     removeNumbers(puzzle, emptyCells);
@@ -46,20 +65,20 @@ window.onload = function() {
   }
 
   function generateSolvedGrid() {
-    let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+    let grid = Array.from({ length: 9 }, ()=>Array(9).fill(0));
     solve(grid);
     return grid;
   }
 
-  function solve(grid) {
-    for (let r=0; r<9; r++) {
-      for (let c=0; c<9; c++) {
-        if (grid[r][c]===0) {
-          let nums = shuffle([1,2,3,4,5,6,7,8,9]);
-          for (let num of nums) {
-            if (isValid(grid,r,c,num)) {
+  function solve(grid){
+    for(let r=0;r<9;r++){
+      for(let c=0;c<9;c++){
+        if(grid[r][c]===0){
+          let nums=shuffle([1,2,3,4,5,6,7,8,9]);
+          for(let num of nums){
+            if(isValid(grid,r,c,num)){
               grid[r][c]=num;
-              if (solve(grid)) return true;
+              if(solve(grid)) return true;
               grid[r][c]=0;
             }
           }
@@ -70,21 +89,26 @@ window.onload = function() {
     return true;
   }
 
-  function isValid(grid,r,c,num) {
-    for (let i=0;i<9;i++) if(grid[r][i]===num || grid[i][c]===num) return false;
-    let br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
-    for (let i=br;i<br+3;i++) for(let j=bc;j<bc+3;j++) if(grid[i][j]===num) return false;
+  function isValid(grid,r,c,num){
+    for(let i=0;i<9;i++) if(grid[r][i]===num || grid[i][c]===num) return false;
+    let br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+    for(let i=br;i<br+3;i++) for(let j=bc;j<bc+3;j++) if(grid[i][j]===num) return false;
     return true;
   }
 
   function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
 
   function removeNumbers(grid,count){
-    let cells=[]; for(let r=0;r<9;r++) for(let c=0;c<9;c++) cells.push([r,c]);
+    let cells=[];
+    for(let r=0;r<9;r++) for(let c=0;c<9;c++) cells.push([r,c]);
     shuffle(cells);
-    for(let i=0;i<count;i++){ let [r,c]=cells[i]; grid[r][c]=0; }
+    for(let i=0;i<count;i++){
+      let [r,c]=cells[i];
+      grid[r][c]=0;
+    }
   }
 
+  // ---------- UI ----------
   function drawSudoku(){
     const table=document.getElementById("sudoku");
     table.innerHTML="";
@@ -114,23 +138,33 @@ window.onload = function() {
     puzzle[r][c]=num;
     td.textContent=num===0?"":num;
     td.classList.toggle("wrong",num!==0 && num!==solution[r][c]);
+    checkWin();
   }
 
   window.giveHint=function(){
-    let empty=[]; for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(puzzle[r][c]===0) empty.push([r,c]);
+    let empty=[];
+    for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(puzzle[r][c]===0) empty.push([r,c]);
     if(empty.length===0){ alert("Puzzle solved!"); return; }
     let [r,c]=empty[Math.floor(Math.random()*empty.length)];
     puzzle[r][c]=solution[r][c];
     drawSudoku();
+    checkWin();
   }
 
-  document.getElementById("newBtn").onclick = ()=>newGame();
-  document.getElementById("hintBtn").onclick = ()=>giveHint();
+  function checkWin(){
+    for(let r=0;r<9;r++) for(let c=0;c<9;c++){
+      if(puzzle[r][c]!==solution[r][c]) return;
+    }
+    alert("🎉 Congratulations! You solved the puzzle!");
+  }
 
-  newGame();
+  // ---------- BUTTONS ----------
+  document.getElementById("newBtn").onclick=newGame;
+  document.getElementById("hintBtn").onclick=giveHint;
+
+  newGame(); // start default game
 }
 </script>
 
 </body>
 </html>
-
