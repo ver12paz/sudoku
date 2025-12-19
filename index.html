@@ -33,8 +33,8 @@
       background-color: #aee;
     }
 
-    .numbers {
-      margin-top: 15px;
+    td.wrong {
+      background-color: #fbb;
     }
 
     .numbers button {
@@ -42,7 +42,6 @@
       height: 45px;
       font-size: 18px;
       margin: 2px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -50,7 +49,7 @@
 
 <h1>Sudoku</h1>
 
-<button onclick="createSudoku()">New Puzzle</button>
+<button onclick="newGame()">New Puzzle</button>
 <button onclick="giveHint()">Hint</button>
 
 <br><br>
@@ -70,40 +69,81 @@
 </div>
 
 <script>
-  const solvedGrid = [
-    [5,3,4,6,7,8,9,1,2],
-    [6,7,2,1,9,5,3,4,8],
-    [1,9,8,3,4,2,5,6,7],
-    [8,5,9,7,6,1,4,2,3],
-    [4,2,6,8,5,3,7,9,1],
-    [7,1,3,9,2,4,8,5,6],
-    [9,6,1,5,3,7,2,8,4],
-    [2,8,7,4,1,9,6,3,5],
-    [3,4,5,2,8,6,1,7,9]
-  ];
-
+  let solution = [];
   let puzzle = [];
   let selectedCell = null;
 
-  function createSudoku(emptyCells = 45) {
-    puzzle = solvedGrid.map(row => row.slice());
+  // ---------- SUDOKU GENERATION ----------
 
-    let positions = [];
+  function newGame(emptyCells = 45) {
+    solution = generateSolvedGrid();
+    puzzle = solution.map(row => row.slice());
+    removeNumbers(puzzle, emptyCells);
+    drawSudoku();
+  }
+
+  function generateSolvedGrid() {
+    let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+    solve(grid);
+    return grid;
+  }
+
+  function solve(grid) {
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        positions.push([r, c]);
+        if (grid[r][c] === 0) {
+          let nums = shuffle([1,2,3,4,5,6,7,8,9]);
+          for (let num of nums) {
+            if (isValid(grid, r, c, num)) {
+              grid[r][c] = num;
+              if (solve(grid)) return true;
+              grid[r][c] = 0;
+            }
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function isValid(grid, r, c, num) {
+    for (let i = 0; i < 9; i++) {
+      if (grid[r][i] === num || grid[i][c] === num) return false;
+    }
+
+    let br = Math.floor(r / 3) * 3;
+    let bc = Math.floor(c / 3) * 3;
+    for (let i = br; i < br + 3; i++) {
+      for (let j = bc; j < bc + 3; j++) {
+        if (grid[i][j] === num) return false;
       }
     }
 
-    positions.sort(() => Math.random() - 0.5);
+    return true;
+  }
 
-    for (let i = 0; i < emptyCells; i++) {
-      let [r, c] = positions[i];
-      puzzle[r][c] = 0;
+  function shuffle(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+
+  function removeNumbers(grid, count) {
+    let cells = [];
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        cells.push([r, c]);
+      }
     }
 
-    drawSudoku();
+    shuffle(cells);
+
+    for (let i = 0; i < count; i++) {
+      let [r, c] = cells[i];
+      grid[r][c] = 0;
+    }
   }
+
+  // ---------- UI ----------
 
   function drawSudoku() {
     const table = document.getElementById("sudoku");
@@ -111,19 +151,17 @@
 
     puzzle.forEach((row, r) => {
       const tr = document.createElement("tr");
-
       row.forEach((cell, c) => {
         const td = document.createElement("td");
         td.textContent = cell === 0 ? "" : cell;
 
-        if (cell !== 0 && solvedGrid[r][c] === cell) {
+        if (cell !== 0 && cell === solution[r][c]) {
           td.classList.add("fixed");
         }
 
         td.onclick = () => selectCell(td, r, c);
         tr.appendChild(td);
       });
-
       table.appendChild(tr);
     });
   }
@@ -139,12 +177,14 @@
     selectedCell = { td, r, c };
   }
 
-  function placeNumber(number) {
+  function placeNumber(num) {
     if (!selectedCell) return;
 
     const { r, c, td } = selectedCell;
-    puzzle[r][c] = number;
-    td.textContent = number === 0 ? "" : number;
+    puzzle[r][c] = num;
+    td.textContent = num === 0 ? "" : num;
+
+    td.classList.toggle("wrong", num !== 0 && num !== solution[r][c]);
   }
 
   function giveHint() {
@@ -158,16 +198,16 @@
     }
 
     if (empty.length === 0) {
-      alert("Puzzle complete!");
+      alert("Puzzle solved!");
       return;
     }
 
     let [r, c] = empty[Math.floor(Math.random() * empty.length)];
-    puzzle[r][c] = solvedGrid[r][c];
+    puzzle[r][c] = solution[r][c];
     drawSudoku();
   }
 
-  createSudoku();
+  newGame();
 </script>
 
 </body>
