@@ -31,13 +31,28 @@ td.wrong { background-color: #fbb; }
   margin-bottom: 15px;
 }
 
-.diffBtn {
-  width: 120px;          /* slightly wider to fit text */
-  height: 40px;
-  font-size: 16px;      /* smaller font to fit */
-  margin: 0 50px;       /* horizontal spacing between buttons */
-  padding: 5px;
+.button-container {
+  display: flex;
+  justify-content: center; /* center buttons */
+  gap: 105px;               /* space between buttons */
+  margin-top: 20px;
 }
+.diffBtn {
+  width: 120px;
+  height: 40px;
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+}
+
+.diffBtn:hover {
+  background-color: #45a049;
+}
+
 </style>
 
 
